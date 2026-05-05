@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <title>程序设计说明书 - 费曼学习平台</title>
+  <style>
+    body { font-family: "Microsoft Yahei", SimSun, Segoe UI, Arial, Helvetica, sans-serif; color:#111; line-height:1.6; }
+    .page { max-width: 900px; margin: 0 auto; padding: 24px 32px; }
+    h1, h2, h3, h4 { font-weight: 700; color: #0f172a; }
+    h1 { text-align:center; margin: 24px 0 8px; }
+    h2 { margin-top: 28px; border-bottom: 2px solid #e5e7eb; padding-bottom: 6px; }
+    h3 { margin-top: 18px; }
+    .meta { text-align:center; color:#475569; margin-bottom: 16px; }
+    .toc ol { margin: 0; padding-left: 20px; }
+    .toc a { color:#1d4ed8; text-decoration:none; }
+    .table { border-collapse: collapse; width: 100%; }
+    .table th, .table td { border: 1px solid #cbd5e1; padding: 8px; vertical-align: top; }
+    .mono { font-family: Consolas, Menlo, Monaco, monospace; }
+    .blockquote { border-left: 4px solid #94a3b8; padding-left: 10px; color:#334155; background:#f8fafc; }
+    .kv dt { width: 220px; float:left; clear:left; color:#334155; }
+    .kv dd { margin-left: 230px; margin-bottom: 6px; }
+    .small { color:#475569; font-size: 12px; }
+    .code { background: #f8fafc; border:1px solid #e2e8f0; padding:10px; border-radius:6px; }
+  </style>
+</head>
+<body>
+  <div class="page">
+
+    <h1>程序设计说明书</h1>
+    <div class="meta">项目：费曼学习平台（Feynman Learning Platform）</div>
+    <div class="meta small">版本：v1.0 • 日期：2025-12-11 • 作者：项目组</div>
+
+    <h2 id="rev">修订记录</h2>
+    <table class="table">
+      <thead>
+        <tr><th>版本</th><th>日期</th><th>作者</th><th>变更说明</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>1.0</td><td>2025-12-11</td><td>项目组</td><td>首版：完成 AI 出题、智能测评、RAG 检索与生成设计与实现说明</td></tr>
+      </tbody>
+    </table>
+
+    <h2>目录</h2>
+    <div class="toc">
+      <ol>
+        <li><a href="#intro">引言</a></li>
+        <li><a href="#overview">总体描述</a></li>
+        <li><a href="#arch">系统架构设计</a></li>
+        <li><a href="#backend">后端详细设计</a></li>
+        <li><a href="#frontend">前端详细设计</a></li>
+        <li><a href="#api">接口与数据契约</a></li>
+        <li><a href="#env">部署与环境配置</a></li>
+        <li><a href="#security">安全与鉴权</a></li>
+        <li><a href="#performance">性能与扩展性</a></li>
+        <li><a href="#testing">测试与验证</a></li>
+        <li><a href="#ops">运维与监控</a></li>
+        <li><a href="#appendix">附录</a></li>
+      </ol>
+    </div>
+
+    <h2 id="intro">1. 引言</h2>
+    <p>费曼学习平台面向个人学习与教学场景，通过“复述-评价-练习-检索-生成”的闭环，帮助学习者构建与巩固知识体系。本说明书面向研发、测试与运维团队，描述系统的设计目标、架构、模块职责、接口契约与运维要点。</p>
+
+    <h2 id="overview">2. 总体描述</h2>
+    <dl class="kv">
+      <dt>目标用户</dt><dd>学生、自学者、教学助教</dd>
+      <dt>核心能力</dt><dd>知识点管理、音频复述+语音识别、AI 评价与打分、AI 出题与前端测评、RAG 私有知识问答</dd>
+      <dt>技术栈</dt><dd>后端：Node.js / Express / Mongoose；前端：React / Vite；AI：DeepSeek Chat；向量：百度千帆 v2 Embeddings（本地 JSON 向量库）</dd>
+      <dt>数据存储</dt><dd>MongoDB（业务数据）；本地向量库（JSON 文件）</dd>
+    </dl>
+
+    <h2 id="arch">3. 系统架构设计</h2>
+    <h3>3.1 分层架构</h3>
+    <ul>
+      <li>表示层（前端）：React 单页应用，提供知识点管理、AI 出题/测评、知识库问答 UI。</li>
+      <li>业务层（后端）：Express 路由与控制器，编排 AI 调用、评分逻辑与 RAG 流程。</li>
+      <li>数据层：MongoDB 存储业务对象；向量库以 JSON 文件持久化。</li>
+      <li>AI 服务：DeepSeek Chat（生成/评价/回答），百度千帆 v2 Embeddings（向量化）。</li>
+    </ul>
+
+    <h3>3.2 关键组件</h3>
+    <ul>
+      <li>controllers/deepseekAiController.js：费曼评价、文本润色、AI 出题/评分接口。</li>
+      <li>services/vectorStoreService.js：文本分割、向量化、相似度检索（余弦相似度）。</li>
+      <li>services/deepseekClient.js：DeepSeek Chat API 封装。</li>
+      <li>services/ragService.js：RAG 编排（检索→构造 Prompt→生成回答）。</li>
+      <li>routes：/api/users、/api/knowledge-points、/api/ai、/api/rag。</li>
+    </ul>
+
+    <div class="blockquote">
+      部署形态：单体服务（前后端分离）。可在后续演进中抽离 RAG 服务与向量存储为独立微服务。
+    </div>
+
+    <h2 id="backend">4. 后端详细设计</h2>
+    <h3>4.1 数据模型（简要）</h3>
+    <ul>
+      <li>User：认证与鉴权（JWT）。</li>
+      <li>KnowledgePoint：{ title, content, status, reviewList, masteryLevel, stats, learningHistory, timestamps }。</li>
+      <li>FeynmanRecord：复述记录、分数等（可选）。</li>
+    </ul>
+
+    <h3>4.2 模块与职责</h3>
+    <h4>4.2.1 controllers/deepseekAiController.js</h4>
+    <ul>
+      <li>POST /api/ai/evaluate：对复述文本进行润色、评价与打分（DeepSeek）。</li>
+      <li>POST /api/ai/polish：纯文本润色。</li>
+      <li>POST /api/ai/generate-question：按知识点与难度生成单选题（结构化 JSON）。</li>
+      <li>POST /api/ai/grade-answer：简答题评分（返回 isCorrect、explanation、score）。</li>
+    </ul>
+
+    <h4>4.2.2 services/vectorStoreService.js</h4>
+    <ul>
+      <li>splitText(content, 800, 100)：无依赖文本分割，保证语义重叠。</li>
+      <li>addKnowledgePointToStore(kp)：调用千帆 v2 Embeddings 生成向量，追加写入 JSON 文件。</li>
+      <li>searchSimilarChunks(question, topK, { allowedKpIds, minScore })：向量检索（余弦相似度）。</li>
+      <li>index.json 结构：[{ id, kpId, title, text, vector(number[]), createdAt }]。</li>
+    </ul>
+
+    <h4>4.2.3 services/deepseekClient.js</h4>
+    <ul>
+      <li>chat(messages, { model, temperature, max_tokens })：DeepSeek Chat 封装，返回 content。</li>
+    </ul>
+
+    <h4>4.2.4 services/ragService.js</h4>
+    <ul>
+      <li>answerQuestion({ question, topK, filterKpIds, minScore })：</li>
+      <li>检索相似片段 → 拼装严格的“只依据给定片段回答”的 System+User Prompt → DeepSeek 生成。</li>
+      <li>返回 { answer, sources:[{ index, kpId, title, score, preview }] }。</li>
+    </ul>
+
+    <h4>4.2.5 routes/rag.js</h4>
+    <ul>
+      <li>POST /api/rag/query：接收 question、topK、filterKpIds、minScore，返回答案与引用片段。</li>
+    </ul>
+
+    <h3>4.3 关键流程（概要序列）</h3>
+    <p class="mono">[RAG 问答]
+客户端 → /api/rag/query → ragService.answerQuestion → vectorStore.searchSimilarChunks → DeepSeek Chat → 返回答案+引用</p>
+
+    <h2 id="frontend">5. 前端详细设计</h2>
+    <h3>5.1 技术栈与结构</h3>
+    <ul>
+      <li>React + Vite；React Router；Axios；Context（Auth）。</li>
+      <li>目录：src/pages、src/components、src/services、src/context、src/api。</li>
+    </ul>
+
+    <h3>5.2 路由</h3>
+    <ul>
+      <li>/login、/register（公开）。</li>
+      <li>/（Dashboard）、/kp/new、/kp/edit/:id、/feynman/:id、/quiz/:id、/qa（受保护）。</li>
+    </ul>
+
+    <h3>5.3 关键页面</h3>
+    <ul>
+      <li>DashboardPage：知识点列表、概览、过滤排序、卡片操作。</li>
+      <li>FeynmanRecordPage：语音复述（与识别）、AI 评价。</li>
+      <li>QuizPage：按难度生成单选题，前端判分，错误加入复习列表。</li>
+      <li>KnowledgeQAPage：知识库问答；TopK 与最低相似度可调；可限定知识点范围；展示引用来源与相似度条；一键复制答案。</li>
+    </ul>
+
+    <h3>5.4 主要前端服务</h3>
+    <ul>
+      <li>src/api/axios.js：统一 baseURL、JWT 拦截器、401 处理。</li>
+      <li>src/services/ragService.js：封装 /api/rag/query。</li>
+      <li>src/services/knowledgePointService.js（已有）：知识点相关 API。</li>
+      <li>src/services/aiService.js（已有）：AI 相关 API。</li>
+    </ul>
+
+    <h3>5.5 UI/UX 风格</h3>
+    <ul>
+      <li>全局柔和配色、圆角与阴影、导航毛玻璃效果；统一按钮/输入态。</li>
+      <li>问答页强调可读性与引用可溯性，提供复制与可视化相似度。</li>
+    </ul>
+
+    <h2 id="api">6. 接口与数据契约</h2>
+    <h3>6.1 认证</h3>
+    <p>所有受保护接口需请求头 <span class="mono">x-auth-token: &lt;JWT&gt;</span>。</p>
+
+    <h3>6.2 知识点 API（节选）</h3>
+    <div class="code mono">
+POST /api/knowledge-points
+PUT /api/knowledge-points/:id
+GET /api/knowledge-points
+GET /api/knowledge-points/:id
+GET /api/knowledge-points/overview
+GET /api/knowledge-points/review/list
+GET /api/knowledge-points/:id/stats
+PUT /api/knowledge-points/:id/update-status
+    </div>
+
+    <h3>6.3 AI API（节选）</h3>
+    <div class="code mono">
+POST /api/ai/evaluate          // 复述评价与打分
+POST /api/ai/polish            // 文本润色
+POST /api/ai/generate-question // 生成单选题（可扩展简答题）
+POST /api/ai/grade-answer      // 简答题评分
+    </div>
+
+    <h3>6.4 RAG API</h3>
+    <div class="code mono">
+POST /api/rag/query
+Body: {
+  question: string,
+  topK?: number,
+  filterKpIds?: string[],
+  minScore?: number
+}
+Resp: {
+  answer: string,
+  sources: [{ index: number, kpId: string, title: string, score: number, preview: string }]
+}
+    </div>
+
+    <h2 id="env">7. 部署与环境配置</h2>
+    <h3>7.1 后端 .env 关键变量</h3>
+    <div class="code mono">
+PORT=3000
+MONGO_URI=mongodb://...
+JWT_SECRET=...
+FRONTEND_URL=http://localhost:5173
+
+# DeepSeek Chat
+DEEPSEEK_API_KEY=...
+
+# Embeddings（百度千帆 v2）
+EMBEDDINGS_PROVIDER=qianfan
+QIANFAN_V2_API_KEY=bce-v3/...
+QIANFAN_V2_EMBEDDING_ENDPOINT=https://qianfan.baidubce.com/v2/embeddings
+QIANFAN_V2_MODEL=embedding-v1
+    </div>
+
+    <h3>7.2 运行步骤（开发）</h3>
+    <ol>
+      <li>配置 .env；启动 MongoDB。</li>
+      <li>后端：npm start（或 node index.js）。</li>
+      <li>前端：npm run dev 打开 http://localhost:5173。</li>
+    </ol>
+
+    <h2 id="security">8. 安全与鉴权</h2>
+    <ul>
+      <li>JWT 鉴权中间件，敏感 API 统一拦截。</li>
+      <li>CORS 仅允许可信前端源（可配置 FRONTEND_URL）。</li>
+      <li>AI 与 Embeddings Key 放置于后端环境变量，不在前端暴露。</li>
+    </ul>
+
+    <h2 id="performance">9. 性能与扩展性</h2>
+    <ul>
+      <li>分批向量化（batchSize=16），减少单请求负荷。</li>
+      <li>本地 JSON 向量库便于教学与调试，实战可替换为 HNSWLib/Pinecone/Weaviate 等。</li>
+      <li>RAG 服务可独立化与水平扩展；可引入缓存与检索结果重用。</li>
+    </ul>
+
+    <h2 id="testing">10. 测试与验证</h2>
+    <ul>
+      <li>单元：vectorStore 分割与相似度计算；ragService Prompt 组装。</li>
+      <li>集成：创建/更新知识点后索引生成；/api/rag/query 回答合理性与引用对应。</li>
+      <li>端到端：前端 /qa 交互（TopK/相似度阈值/限定知识点）与答案可复制。</li>
+    </ul>
+
+    <h2 id="ops">11. 运维与监控</h2>
+    <ul>
+      <li>日志：关键路径打印（索引、检索、生成）与错误捕获。</li>
+      <li>健康检查：/health 返回 DB 连接状态与时间戳。</li>
+      <li>告警：建议在生产接入日志/指标（如 Prometheus + Grafana）。</li>
+    </ul>
+
+    <h2 id="appendix">附录</h2>
+    <h3>A. 术语</h3>
+    <ul>
+      <li>RAG：检索增强生成。</li>
+      <li>Embedding：文本向量化表示。</li>
+      <li>TopK：检索返回的最相近片段数量。</li>
+    </ul>
+
+    <h3>B. 参考</h3>
+    <ul>
+      <li>本项目源码与实现（后端、前端、服务与路由）。</li>
+      <li>DeepSeek API 文档。</li>
+      <li>百度千帆 v2 Embeddings API 文档。</li>
+    </ul>
+
+  </div>
+</body>
+</html>
+
+

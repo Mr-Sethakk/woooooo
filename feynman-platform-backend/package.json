@@ -1,0 +1,27 @@
+{
+  "name": "feynman-platform-backend",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "audio-buffer": "^5.0.0",
+    "axios": "^1.13.2",
+    "bcryptjs": "^3.0.2",
+    "cors": "^2.8.5",
+    "dotenv": "^17.2.2",
+    "express": "^5.1.0",
+    "jsonwebtoken": "^9.0.2",
+    "mocha": "^11.7.5",
+    "mongoose": "^8.18.2",
+    "multer": "^2.0.2",
+    "node-speech-recognition": "^1.0.7",
+    "wav-decoder": "^1.3.0",
+    "wav-encoder": "^1.3.0"
+  }
+}
