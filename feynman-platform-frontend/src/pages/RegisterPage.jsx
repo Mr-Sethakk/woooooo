@@ -38,7 +38,7 @@ function RegisterPage() {
   };
 
   return (
-    <div className="auth-wrapper">
+    <div className="auth-wrap">
       <div className="auth-bg" aria-hidden>
         <div className="blob b1" />
         <div className="blob b2" />

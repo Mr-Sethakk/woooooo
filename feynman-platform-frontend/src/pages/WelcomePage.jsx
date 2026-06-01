@@ -11,6 +11,12 @@ function WelcomePage() {
   const { token } = useAuth();
 
   useEffect(() => {
+    // 如果已经看过欢迎动画，直接跳转
+    if (sessionStorage.getItem('welcomePlayed')) {
+      navigate(token ? '/dashboard' : '/login', { replace: true });
+      return;
+    }
+
     // 进度条动画
     const progressInterval = setInterval(() => {
       setProgress(prev => {
@@ -24,13 +30,15 @@ function WelcomePage() {
     }, 30);
 
     return () => clearInterval(progressInterval);
-  }, []);
+  }, [token, navigate]);
 
   const handleEnter = () => {
     const overlay = document.querySelector('.welcome-overlay');
     if (overlay) {
       overlay.style.animation = 'fadeOut 0.8s ease-out forwards';
       setTimeout(() => {
+        // 标记已看过欢迎动画
+        sessionStorage.setItem('welcomePlayed', 'true');
         // 如果已登录，跳转到主页，否则跳转到登录页
         navigate(token ? '/dashboard' : '/login');
       }, 800);
